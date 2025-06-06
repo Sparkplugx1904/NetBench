@@ -1,0 +1,5 @@
+psutil
+requests
+ping3
+rich
+matplotlib
