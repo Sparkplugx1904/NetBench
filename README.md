@@ -1,4 +1,4 @@
-# 📶 WiFi Telemetry Monitor
+# 📶 Internet Benchmark
 
 A Python tool to monitor and visualize real-time WiFi benchmark telemetry data such as download/upload speeds, latency, IP, and data usage, with a built-in one-time upload test and continuous traffic generation.
 
