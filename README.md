@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/Sparkplugx1904/NetBench/blob/main/NetBS.png" alt="NetBS Logo" width="300"/>
+  <img src="https://github.com/Sparkplugx1904/NetBench/blob/main/Net.svg" alt="NetBS Logo" width="600"/>
 </div>
 
 # 📡 NetBS
