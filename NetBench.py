@@ -21,9 +21,17 @@ matplotlib.use("Agg")  # Tambahkan ini sebelum import pyplot
 import matplotlib.pyplot as plt
 import speedtest
 import subprocess
+import sys  # Tambahkan ini
+
+# Definisikan base_dir di awal file
+if getattr(sys, 'frozen', False):
+    base_dir = os.path.dirname(sys.executable)
+else:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
 
 install()
 console = Console()
+current_dir = os.getcwd()
 
 # === Global Telemetry ===
 telemetry_data = {
@@ -143,7 +151,7 @@ def init_telemetry_files():
     global csv_file_path, json_file_path
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     ssid = telemetry_data.get('ssid', 'Unknown').replace(" ", "_")
-    folder = os.path.join(os.path.dirname(__file__), "History")
+    folder = os.path.join(base_dir, "History")  # Ganti ke base_dir
     os.makedirs(folder, exist_ok=True)
     base_filename = f"{ssid}_{timestamp}"
     csv_file_path = os.path.join(folder, f"{base_filename}.csv")
@@ -191,7 +199,8 @@ def save_telemetry_plot_from_json():
         uploads = [u for _, _, u in hist]
         ssid = telemetry_data.get('ssid', 'Unknown').replace(" ", "_")
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        folder = os.path.join(os.path.dirname(__file__), "History")
+        folder = os.path.join(base_dir, "History")  # Ganti ke base_dir
+        os.makedirs(folder, exist_ok=True)
         base_filename = f"{ssid}_{timestamp}_plot"
         png_path = os.path.join(folder, f"{base_filename}.png")
         plt.figure(figsize=(10, 5))
@@ -370,6 +379,51 @@ def update_wifi_info():
         telemetry_data["channel"] = channel
         telemetry_data["frequency"] = frequency
         time.sleep(5)
+
+def update_wifi_info_once():
+    ssid = "Unknown"
+    manufacturer = "Unknown"
+    rssi = "Unknown"
+    channel = "Unknown"
+    frequency = "Unknown"
+    try:
+        if os.name == "nt":
+            out = subprocess.check_output("netsh wlan show interfaces", shell=True).decode(errors="ignore")
+            for line in out.splitlines():
+                if "SSID" in line and "BSSID" not in line:
+                    ssid = line.split(":",1)[-1].strip()
+                if "Signal" in line:
+                    rssi = line.split(":",1)[-1].strip()
+                if "Radio type" in line:
+                    manufacturer = line.split(":",1)[-1].strip()
+        else:
+            try:
+                out = subprocess.check_output("iwgetid -r", shell=True).decode().strip()
+                if out:
+                    ssid = out
+            except:
+                pass
+            try:
+                out = subprocess.check_output("iwconfig 2>/dev/null", shell=True).decode()
+                for line in out.splitlines():
+                    if "Channel" in line:
+                        parts = line.split()
+                        for p in parts:
+                            if p.startswith("Channel"):
+                                channel = p.split(":")[-1]
+                            if "Frequency" in p:
+                                frequency = p.split(":")[-1]
+                    if "Signal level" in line:
+                        rssi = line.split("Signal level=")[-1].split()[0]
+            except:
+                pass
+    except:
+        pass
+    telemetry_data["ssid"] = ssid
+    telemetry_data["manufacturer"] = manufacturer
+    telemetry_data["rssi"] = rssi
+    telemetry_data["channel"] = channel
+    telemetry_data["frequency"] = frequency
 
 # Get network interface info (ip, subnet, gateway, dns)
 def get_network_info():
@@ -583,6 +637,7 @@ def main():
     save_interval = args.save_interval
     history_limit = args.history_limit
     get_network_info()
+    update_wifi_info_once()  # Tambahkan ini agar SSID sudah terisi sebelum init file
     init_telemetry_files()
     # Threads
     threading.Thread(target=update_public_ip, daemon=True).start()
